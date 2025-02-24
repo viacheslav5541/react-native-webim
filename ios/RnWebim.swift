@@ -1,7 +1,7 @@
 // RnWebim.swift
 
 import Foundation
-import WebimClientLibrary
+import WebimMobileSDK
 
 @objc(RnWebim)
 class RnWebim : RCTEventEmitter  {

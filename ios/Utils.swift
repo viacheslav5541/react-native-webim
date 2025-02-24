@@ -1,7 +1,7 @@
 // Utils.swift
 
 import Foundation
-import WebimClientLibrary
+import WebimMobileSDK
 
 class Utils : NSObject  {
     

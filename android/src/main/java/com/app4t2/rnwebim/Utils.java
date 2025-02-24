@@ -52,9 +52,9 @@ public class Utils {
         List<String> buttons = new ArrayList<String>();
         Message.Keyboard keyboard = msg.getKeyboard();
         if (keyboard != null) {
-            List<List<Message.KeyboardButtons>> keyboardButtons = keyboard.getButtons();
-            for (List<Message.KeyboardButtons> buttonsArray : keyboardButtons) {
-                    for (Message.KeyboardButtons button : buttonsArray) {
+            List<List<Message.KeyboardButton>> keyboardButtons = keyboard.getButtons();
+            for (List<Message.KeyboardButton> buttonsArray : keyboardButtons) {
+                    for (Message.KeyboardButton button : buttonsArray) {
                         String buttonTitle = button.getText();
                         buttons.add(buttonTitle);
                     }
