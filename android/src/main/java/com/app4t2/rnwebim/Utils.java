@@ -67,6 +67,11 @@ public class Utils {
         }
         map.putArray("buttons", promiseArray);
 
+        Message.Attachment attach = msg.getAttachment();
+        if (attach != null) {
+            map.putString("contentType", attach.getFileInfo().getContentType().toString());
+            map.putString("url", attach.getFileInfo().getUrl());
+        }
         return map;
     }
 

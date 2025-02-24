@@ -26,13 +26,14 @@ class RnWebim : RCTEventEmitter  {
     
     
     func build(
-        accountName: String, location: String, userFields: String?) -> Void {
+        accountName: String, location: String, userFields: String?, appVersion: String) -> Void {
         do {
             let logger = RnWebimLogger();
-            
-          
-            
-            var builder = Webim.newSessionBuilder().set(accountName: accountName).set(location: location).set(webimLogger: logger, verbosityLevel: SessionBuilder.WebimLoggerVerbosityLevel.verbose)
+            var builder = Webim.newSessionBuilder()
+                .set(accountName: accountName)
+                .set(location: location)
+                .set(webimLogger: logger, verbosityLevel: SessionBuilder.WebimLoggerVerbosityLevel.verbose)
+                .set(appVersion: appVersion);
             
             if (userFields != nil){
                 builder = builder.set(visitorFieldsJSONString: userFields!);
@@ -41,13 +42,13 @@ class RnWebim : RCTEventEmitter  {
             session = try builder.build();
         } catch let error {
             NSLog(error.localizedDescription)
-        }
-             
+        }       
     }
     
     @objc
     func resume(
         _ params: NSDictionary?,
+        withAppVersion appVersion: NSString,
         withResolver resolve: @escaping RCTPromiseResolveBlock,
         withRejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
         
@@ -60,7 +61,7 @@ class RnWebim : RCTEventEmitter  {
             let userFields = params?.value(forKey: "userFields");
             
             if (self.session == nil){
-                self.build(accountName: accountName as! String, location: location as! String, userFields: userFields as? String);
+                self.build(accountName: accountName as! String, location: location as! String, userFields: userFields as? String, appVersion: appVersion as! String);
             }
             
             if (self.session == nil) {
@@ -69,22 +70,22 @@ class RnWebim : RCTEventEmitter  {
                 }
             } else {
                 
-                    do{
-                        try self.session!.resume();
-                        try self.session!.getStream().startChat();
-                        try self.session!.getStream().setChatRead();
-                        self.tracker = try self.session!.getStream().newMessageTracker(messageListener: self.messageListener!);
-                        
-                        if (self.jsPromiseResolver != nil) {
-                            self.jsPromiseResolver!(String(format: "since ok"))
-                        }
-                           
-                        
-                    }catch let error{
-                        if (self.jsPromiseRejecter != nil) {
-                            self.jsPromiseRejecter!("error","Unable to start session: \(error.localizedDescription)", nil)
-                        }
+                do{
+                    try self.session!.resume();
+                    try self.session!.getStream().startChat();
+                    try self.session!.getStream().setChatRead();
+                    self.tracker = try self.session!.getStream().newMessageTracker(messageListener: self.messageListener!);
+                    
+                    if (self.jsPromiseResolver != nil) {
+                        self.jsPromiseResolver!(String(format: "since ok"))
                     }
+                        
+                    
+                } catch let error{
+                    if (self.jsPromiseRejecter != nil) {
+                        self.jsPromiseRejecter!("error","Unable to start session: \(error.localizedDescription)", nil)
+                    }
+                }
             }
         }
     }
@@ -115,13 +116,11 @@ class RnWebim : RCTEventEmitter  {
                 }
             }
         }
-       
     }
     
     @objc
     func destroy(
-        _ clearData: Bool,
-        withResolver resolve: @escaping RCTPromiseResolveBlock,
+        _ resolve: @escaping RCTPromiseResolveBlock,
         withRejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
         
         DispatchQueue.main.async {
@@ -132,12 +131,7 @@ class RnWebim : RCTEventEmitter  {
                 do {
                     try self.session?.getStream().closeChat()
                     try self.tracker?.destroy()
-                    
-                    if (clearData){
-                        try self.session?.destroyWithClearVisitorData()
-                    } else {
-                        try self.session?.destroy()
-                    }
+                    try self.session?.destroy()
                     
                     self.session = nil;
                 }
@@ -152,7 +146,6 @@ class RnWebim : RCTEventEmitter  {
                 self.jsPromiseResolver!(nil)
             }
         }
-       
     }
     
     
@@ -177,7 +170,6 @@ class RnWebim : RCTEventEmitter  {
                 }
             }
         }
-       
     }
     
     @objc
@@ -203,7 +195,6 @@ class RnWebim : RCTEventEmitter  {
                 }
             }
         }
-       
     }
     
     @objc
@@ -229,7 +220,78 @@ class RnWebim : RCTEventEmitter  {
                 }
             }
         }
-       
+    }
+
+    @objc
+    func sendFile(
+        _ uri: NSString,
+        withName name: NSString,
+        withMime mime: NSString,
+        withExtension extension: NSString,
+        withResolver resolve: @escaping RCTPromiseResolveBlock,
+        withRejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+    
+        DispatchQueue.main.async {
+            self.jsPromiseResolver = resolve;
+            self.jsPromiseRejecter = reject;
+            
+            do {
+                let fileString = uri as String
+                let file = fileString.data(using: .utf8)!
+                let fromDataToString = String(data: file, encoding: .isoLatin1)
+                let fromStringToData = Data(base64Encoded: fromDataToString!, options: .ignoreUnknownCharacters)
+
+                try self.session?.getStream().send(file: fromStringToData ?? "error white reading file".data(using: .utf8)!, filename: name as String, mimeType: mime as String, completionHandler: nil);
+                if (self.jsPromiseResolver != nil) {
+                    self.jsPromiseResolver!("success")
+                }
+            }catch let error{
+                if (self.jsPromiseRejecter != nil) {
+                    self.jsPromiseRejecter!("error","Send message error: \(error.localizedDescription)", nil)
+                }
+            }
+        } 
+    }
+    
+    @objc
+    func getUnreadByVisitorMessageCount(
+        _ resolve: @escaping RCTPromiseResolveBlock,
+        withRejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+            DispatchQueue.main.async {
+                self.jsPromiseResolver = resolve;
+                self.jsPromiseRejecter = reject;
+          
+                do {
+                    let count = self.session?.getStream().getUnreadByVisitorMessageCount() 
+                    if (self.jsPromiseResolver != nil) {
+                        self.jsPromiseResolver!(count)
+                    }
+                } catch let error {
+                    if (self.jsPromiseRejecter != nil) {
+                        self.jsPromiseRejecter!("error","Send message error:", nil)
+                }
+            }
+        }
+    }
+    
+    @objc
+    func setChatRead(
+        _ resolve: @escaping RCTPromiseResolveBlock,
+        withRejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
+            DispatchQueue.main.async {
+                self.jsPromiseResolver = resolve;
+                self.jsPromiseRejecter = reject;
+          
+                do {
+                    try self.session?.getStream().setChatRead() 
+                    if (self.jsPromiseResolver != nil) {
+                        self.jsPromiseResolver!("success")
+                    }
+                } catch let error {
+                    if (self.jsPromiseRejecter != nil) {
+                        self.jsPromiseRejecter!("error","Send message error:", nil)
+                }
+            }
+        }
     }
 }
-

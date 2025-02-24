@@ -8,6 +8,7 @@
 
 RCT_EXTERN_METHOD(resume:
                   (NSDictionary *)params
+                  withAppVersion: (NSString *)appVersion
                   withResolver: (RCTPromiseResolveBlock)resolve
                   withRejecter: (RCTPromiseRejectBlock)reject
 )
@@ -18,8 +19,7 @@ RCT_EXTERN_METHOD(pause:
 )
 
 RCT_EXTERN_METHOD(destroy:
-                  (Bool *)clearData
-                  withResolver: (RCTPromiseResolveBlock)resolve
+                  (RCTPromiseResolveBlock)resolve
                   withRejecter: (RCTPromiseRejectBlock)reject
 )
 
@@ -41,12 +41,29 @@ RCT_EXTERN_METHOD(getNextMessages:
                   withRejecter: (RCTPromiseRejectBlock)reject
 )
 
+RCT_EXTERN_METHOD(sendFile:
+                  (NSString *)uri
+                  withName: (NSString *)name
+                  withMime: (NSString *)mime
+                  withExtension: (NSString *)extension
+                  withResolver: (RCTPromiseResolveBlock)resolve
+                  withRejecter: (RCTPromiseRejectBlock)reject
+)
 
+RCT_EXTERN_METHOD(getUnreadByVisitorMessageCount:
+                  (RCTPromiseResolveBlock)resolve
+                  withRejecter: (RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(setChatRead:
+                  (RCTPromiseResolveBlock)resolve
+                  withRejecter: (RCTPromiseRejectBlock)reject
+)
 
 RCT_EXTERN_METHOD(supportedEvents)
 
++ (BOOL) requiresMainQueueSetup {
+  return YES;
+}
 
 @end
-
-
-
